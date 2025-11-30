@@ -3,6 +3,8 @@ from typing import Any, Iterable, List, Tuple
 
 from typing_extensions import Protocol
 
+from collections import defaultdict
+
 # ## Task 1.1
 # Central Difference calculation
 
@@ -22,8 +24,11 @@ def central_difference(f: Any, *vals: Any, arg: int = 0, epsilon: float = 1e-6) 
     Returns:
         An approximation of $f'_i(x_0, \ldots, x_{n-1})$
     """
-    # TODO: Implement for Task 1.1.
-    raise NotImplementedError("Need to implement for Task 1.1")
+    vals_plus = list(vals)
+    vals_minus = list(vals)
+    vals_plus[arg] = vals_plus[arg] + epsilon
+    vals_minus[arg] = vals_minus[arg] - epsilon
+    return (f(*vals_plus) - f(*vals_minus)) / (2 * epsilon)
 
 
 variable_count = 1
@@ -61,8 +66,20 @@ def topological_sort(variable: Variable) -> Iterable[Variable]:
     Returns:
         Non-constant Variables in topological order starting from the right.
     """
-    # TODO: Implement for Task 1.4.
-    raise NotImplementedError("Need to implement for Task 1.4")
+    result = []
+    work = []
+    seen_ids = []
+    work.append(variable)
+    seen_ids.append(variable.unique_id)
+
+    while len(work) != 0:
+        next = work.pop(0)
+        result.append(next)
+        for v in next.parents:
+            if not v.is_constant() and not v.unique_id in seen_ids:
+                seen_ids.append(v.unique_id)
+                work.append(v)
+    return result
 
 
 def backpropagate(variable: Variable, deriv: Any) -> None:
@@ -76,8 +93,15 @@ def backpropagate(variable: Variable, deriv: Any) -> None:
 
     No return. Should write to its results to the derivative values of each leaf through `accumulate_derivative`.
     """
-    # TODO: Implement for Task 1.4.
-    raise NotImplementedError("Need to implement for Task 1.4")
+    work = topological_sort(variable)
+    result = defaultdict(float)
+    result[variable.unique_id] = deriv
+    for v in work:
+        if not v.is_leaf():
+            for var, d in v.chain_rule(result[v.unique_id]):
+                result[var.unique_id] += d
+        else:
+            v.accumulate_derivative(result[v.unique_id])
 
 
 @dataclass
